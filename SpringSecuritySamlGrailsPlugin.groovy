@@ -51,7 +51,7 @@ import org.apache.commons.httpclient.HttpClient
 
 class SpringSecuritySamlGrailsPlugin {
     // the plugin version
-    def version = "2.0.0"
+    def version = "2.0.1-SNAPSHOT"
     // the version or versions of Grails the plugin is designed for
     def grailsVersion = "1.3 > *"
     // the other plugins this plugin depends on
@@ -100,18 +100,18 @@ SAML 2.x support for the Spring Security Plugin
 		SpringSecurityUtils.loadSecondaryConfig 'DefaultSamlSecurityConfig'
 		conf = SpringSecurityUtils.securityConfig
 		if (!conf.saml.active) { return }
-		
+
 		println 'Configuring Spring Security SAML ...'
 
 		//Due to Spring DSL limitations, need to import these beans as XML definitions
 		def beansFile = "classpath:security/springSecuritySamlBeans.xml"
 		log.debug "Importing beans from ${beansFile}..."
 		delegate.importBeans beansFile
-		
+
 		xmlns context:"http://www.springframework.org/schema/context"
 		context.'annotation-config'()
 		context.'component-scan'('base-package': "org.springframework.security.saml")
-		
+
 		SpringSecurityUtils.registerProvider 'samlAuthenticationProvider'
 		SpringSecurityUtils.registerLogoutHandler 'successLogoutHandler'
 		SpringSecurityUtils.registerLogoutHandler 'logoutHandler'
@@ -120,21 +120,21 @@ SAML 2.x support for the Spring Security Plugin
 		SpringSecurityUtils.registerFilter 'samlProcessingFilter', SecurityFilterPosition.SECURITY_CONTEXT_FILTER.order + 3
 		SpringSecurityUtils.registerFilter 'samlLogoutFilter', SecurityFilterPosition.SECURITY_CONTEXT_FILTER.order + 4
 		SpringSecurityUtils.registerFilter 'samlLogoutProcessingFilter', SecurityFilterPosition.SECURITY_CONTEXT_FILTER.order + 5
-		
+
 		successRedirectHandler(SavedRequestAwareAuthenticationSuccessHandler) {
 			alwaysUseDefaultTargetUrl = conf.saml.alwaysUseAfterLoginUrl ?: false
 			defaultTargetUrl = conf.saml.afterLoginUrl
 		}
-		
+
 		successLogoutHandler(SimpleUrlLogoutSuccessHandler) {
 			defaultTargetUrl = conf.saml.afterLogoutUrl
 		}
-		
+
 		samlLogger(SAMLDefaultLogger)
-		
-		keyManager(JKSKeyManager, 
-			conf.saml.keyManager.storeFile, conf.saml.keyManager.storePass, conf.saml.keyManager.passwords, conf.saml.keyManager.defaultKey) 
-		
+
+		keyManager(JKSKeyManager,
+			conf.saml.keyManager.storeFile, conf.saml.keyManager.storePass, conf.saml.keyManager.passwords, conf.saml.keyManager.defaultKey)
+
 		def idpSelectionPath = conf.saml.entryPoint.idpSelectionPath
 		samlEntryPoint(SAMLEntryPoint) {
 			filterProcessesUrl = conf.auth.loginFormUrl 						// '/saml/login'
@@ -143,15 +143,15 @@ SAML 2.x support for the Spring Security Plugin
 			}
 			defaultProfileOptions = ref('webProfileOptions')
 		}
-		
+
 		webProfileOptions(WebSSOProfileOptions) {
 			includeScoping = false
 		}
-		
+
 		metadataFilter(MetadataDisplayFilter) {
 			filterProcessesUrl = conf.saml.metadata.url 						// '/saml/metadata'
 		}
-		
+
 		metadataGenerator(MetadataGenerator)
 
         // TODO: Update to handle any type of meta data providers for default to file based instead http provider.
@@ -261,18 +261,18 @@ SAML 2.x support for the Spring Security Plugin
         }
 
 		metadata(CachingMetadataManager) { metadataBean ->
-			// At this point, due to Spring DSL limitations, only one provider 
+			// At this point, due to Spring DSL limitations, only one provider
 			// can be defined so just picking the first one
 			metadataBean.constructorArgs = [providers.first()]
 			providers = providers
-			
+
 			if (defaultSpConfig?."alias") {
 				hostedSPName = defaultSpConfig?."alias"
 			}
 
 			// defaultIDP = conf.saml.metadata.providers[conf.saml.metadata.defaultIdp]
 		}
-		
+
 		userDetailsService(SpringSamlUserDetailsService) {
 			grailsApplication = ref('grailsApplication')
 			authorityClassName = conf.authority.className
@@ -286,21 +286,21 @@ SAML 2.x support for the Spring Security Plugin
 			samlUserGroupToRoleMapping = conf.saml.userGroupToRoleMapping
 			userDomainClassName = conf.userLookup.userDomainClassName
 		}
-		
+
 		samlAuthenticationProvider(GrailsSAMLAuthenticationProvider) {
 			userDetails = ref('userDetailsService')
 			hokConsumer = ref('webSSOprofileConsumer')
 		}
-		
+
 		contextProvider(SAMLContextProviderImpl)
-		
+
 		samlProcessingFilter(SAMLProcessingFilter) {
 			authenticationManager = ref('authenticationManager')
 			authenticationSuccessHandler = ref('successRedirectHandler')
 			sessionAuthenticationStrategy = ref('sessionFixationProtectionStrategy')
 			authenticationFailureHandler = ref('authenticationFailureHandler')
 		}
-		
+
 		authenticationFailureHandler(AjaxAwareAuthenticationFailureHandler) {
 			redirectStrategy = ref('redirectStrategy')
 			defaultFailureUrl = conf.failureHandler.defaultFailureUrl //'/login/authfail?login_error=1'
@@ -308,69 +308,69 @@ SAML 2.x support for the Spring Security Plugin
 			ajaxAuthenticationFailureUrl = conf.failureHandler.ajaxAuthFailUrl // '/login/authfail?ajax=true'
 			exceptionMappings = conf.failureHandler.exceptionMappings // [:]
 		}
-		
+
 		redirectStrategy(DefaultRedirectStrategy) {
 			contextRelative = conf.redirectStrategy.contextRelative // false
 		}
 
 		sessionFixationProtectionStrategy(SessionFixationProtectionStrategy)
-		
+
 		logoutHandler(SecurityContextLogoutHandler) {
 			invalidateHttpSession = true
 		}
-		
-		samlLogoutFilter(SAMLLogoutFilter, 
+
+		samlLogoutFilter(SAMLLogoutFilter,
 			ref('successLogoutHandler'), ref('logoutHandler'), ref('logoutHandler'))
-		
-		samlLogoutProcessingFilter(SAMLLogoutProcessingFilter, 
+
+		samlLogoutProcessingFilter(SAMLLogoutProcessingFilter,
 			ref('successLogoutHandler'), ref('logoutHandler'))
-		
+
 		webSSOprofileConsumer(WebSSOProfileConsumerImpl){
 			responseSkew = conf.saml.responseSkew
 		}
-		
+
 		webSSOprofile(WebSSOProfileImpl)
-		
+
 		ecpprofile(WebSSOProfileECPImpl)
-		
+
 		logoutprofile(SingleLogoutProfileImpl)
-		
+
 		postBinding(HTTPPostBinding, ref('parserPool'), ref('velocityEngine'))
-		
+
 		redirectBinding(HTTPRedirectDeflateBinding, ref('parserPool'))
-		
+
 		artifactBinding(HTTPArtifactBinding,
-			ref('parserPool'), 
+			ref('parserPool'),
 			ref('velocityEngine'),
 			ref('artifactResolutionProfile')
 		)
-		
+
 		artifactResolutionProfile(ArtifactResolutionProfileImpl, ref('httpClient')) {
 			processor = ref('soapProcessor')
 		}
-		
+
 		httpClient(HttpClient)
-		
+
 		soapProcessor(SAMLProcessorImpl, ref('soapBinding'))
-		
+
 		soapBinding(HTTPSOAP11Binding, ref('parserPool'))
-		
+
 		paosBinding(HTTPPAOS11Binding, ref('parserPool'))
-		
+
 		bootStrap(SAMLBootstrap)
-		
+
 		velocityEngine(VelocityFactory) { bean ->
 			bean.factoryMethod = "getEngine"
 		}
-		
+
 		parserPool(BasicParserPool)
-		
+
 		securityTagLib(SamlTagLib) {
 			springSecurityService = ref('springSecurityService')
 			webExpressionHandler = ref('webExpressionHandler')
 			webInvocationPrivilegeEvaluator = ref('webInvocationPrivilegeEvaluator')
 		}
-		
+
 		springSecurityService(SamlSecurityService) {
 			config = conf
 			authenticationTrustResolver = ref('authenticationTrustResolver')

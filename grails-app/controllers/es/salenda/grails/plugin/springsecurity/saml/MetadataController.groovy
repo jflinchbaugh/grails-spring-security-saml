@@ -63,17 +63,11 @@ class MetadataController {
 		[availableKeys: availableKeys, baseUrl: baseUrl, entityId: entityId, alias: alias]
 	}
 
-	def save = {
-
+	def save() {
 		metadataGenerator.setEntityId(params.entityId)
-		metadataGenerator.setEntityAlias(params.alias)
 		metadataGenerator.setEntityBaseURL(params.baseURL)
-		metadataGenerator.setSignMetadata(params.signMetadata as boolean)
 		metadataGenerator.setRequestSigned(params.requestSigned as boolean)
 		metadataGenerator.setWantAssertionSigned(params.wantAssertionSigned as boolean)
-		metadataGenerator.setSigningKey(params.signingKey)
-		metadataGenerator.setEncryptionKey(params.encryptionKey)
-		metadataGenerator.setTlsKey(params.tlsKey)
 
 		def bindingsSSO = []
 
@@ -94,15 +88,19 @@ class MetadataController {
 
 		metadataGenerator.setBindingsSSO((Collection<String>) bindingsSSO)
 
-		metadataGenerator.setIncludeDiscovery(params.includeDiscovery as boolean)
-
-		def descriptor = metadataGenerator.generateMetadata()
-
 		ExtendedMetadata extendedMetadata = metadataGenerator.generateExtendedMetadata()
 		extendedMetadata.setSecurityProfile(params.securityProfile)
 		extendedMetadata.setRequireLogoutRequestSigned(params.requireLogoutRequestSigned as boolean)
 		extendedMetadata.setRequireLogoutResponseSigned(params.requireLogoutResponseSigned as boolean)
 		extendedMetadata.setRequireArtifactResolveSigned(params.requireArtifactResolveSigned as boolean)
+		extendedMetadata.setAlias(params.alias)
+		extendedMetadata.setSignMetadata(params.signMetadata as boolean)
+		extendedMetadata.setSigningKey(params.signingKey)
+		extendedMetadata.setEncryptionKey(params.encryptionKey)
+		extendedMetadata.setTlsKey(params.tlsKey)
+		extendedMetadata.setIdpDiscoveryEnabled(params.includeDiscovery as boolean)
+
+        def descriptor = metadataGenerator.generateMetadata()
 
 		if (params.store) {
 			MetadataMemoryProvider memoryProvider = new MetadataMemoryProvider(descriptor)
