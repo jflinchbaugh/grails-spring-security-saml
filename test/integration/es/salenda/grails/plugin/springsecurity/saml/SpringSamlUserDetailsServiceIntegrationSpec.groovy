@@ -12,7 +12,7 @@ import org.opensaml.saml2.core.impl.AssertionImpl
 import org.codehaus.groovy.grails.commons.GrailsApplication
 
 
-class SpringSamlUserDetailsServiceSpec extends IntegrationSpec {
+class SpringSamlUserDetailsServiceIntegrationSpec extends IntegrationSpec {
 
 	String username = "jackSparrow"
 
