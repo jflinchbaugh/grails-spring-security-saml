@@ -28,22 +28,6 @@ class SamlTagLib extends SecurityTagLib {
 	/**
 	 * {@inheritDocs}
 	 */
-	def loggedInUserInfo = { attrs, body ->
-		String field = assertAttribute('field', attrs, 'loggedInUserInfo')
-
-		def source = springSecurityService.authentication.details."${field}"
-
-		if (source) {
-			out << source.encodeAsHTML()
-		}
-		else {
-			out << body()
-		}
-	}
-
-	/**
-	 * {@inheritDocs}
-	 */
 	def loginLink = { attrs, body ->
 		def contextPath = request.contextPath
 		def url = Holders.grailsApplication.config.grails.plugin.springsecurity.auth.loginFormUrl
